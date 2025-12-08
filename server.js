@@ -25,6 +25,10 @@ app.use(
 
 connectDB();
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 // Middleware
 app.use(express.json());
 
