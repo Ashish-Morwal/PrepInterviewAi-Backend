@@ -47,6 +47,7 @@ const registerUser = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
+  console.log("✅ loginUser called, body:", req.body);
   try {
     const { email, password } = req.body;
 
