@@ -4,14 +4,24 @@ const Question = require("../models/Question");
 // @desc    Create a new session and linked questions
 // @route   POST /api/sessions/create
 // @access  Private
+
 exports.createSession = async (req, res) => {
   try {
     const { role, experience, topicsToFocus, description, questions } =
       req.body;
-    const userId = req.user._id; // Assuming you have a middleware setting req.user
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({
+        message: "Questions array is required to create a session",
+      });
+    }
 
     const session = await Session.create({
-      user: userId,
+      user: req.user._id,
       role,
       experience,
       topicsToFocus,
@@ -19,17 +29,16 @@ exports.createSession = async (req, res) => {
     });
 
     const questionDocs = await Promise.all(
-      questions.map(async (q) => {
-        const question = await Question.create({
+      questions.map((q) =>
+        Question.create({
           session: session._id,
           question: q.question,
-          answer: q.answer,
-        });
-        return question._id;
-      })
+          answer: q.answer.replace(/```/g, ""),
+        })
+      )
     );
 
-    session.questions = questionDocs;
+    session.questions = questionDocs.map((q) => q._id);
     await session.save();
 
     res.status(201).json({ success: true, session });
@@ -55,6 +64,7 @@ exports.getMySessions = async (req, res) => {
 // @desc    Get a session by ID with populated questions
 // @route   GET /api/sessions/:id
 // @access  Private
+
 exports.getSessionById = async (req, res) => {
   try {
     const session = await Session.findById(req.params.id)
